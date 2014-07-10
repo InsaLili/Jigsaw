@@ -92,7 +92,7 @@ function fixLocation(mapSprite) {
     }else if(mapSprite.y <= - pieceHeight/2){
     	mapSprite.visible = false;
         msg = {name: 'pieceFrance', indexPiece: indexPiece};
-		socket.emit('passLeft',msg);
+		socket.emit('passUp',msg);
     }
 }
 function update() {

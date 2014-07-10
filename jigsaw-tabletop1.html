@@ -110,7 +110,13 @@ function update() {
 		alert("Congratulations!");
 		pieceNum++;
 	}
-	socket.on("addSprite", function(data) {
+	socket.on("passRight", function(data) {
+		//var obj = JSON.parse(data);
+		var indexPiece = data.indexPiece;
+		piecesArray[indexPiece].visible = true;
+		piecesArray[indexPiece].x = 10;
+	})
+	socket.on("passUp", function(data) {
 		//var obj = JSON.parse(data);
 		var indexPiece = data.indexPiece;
 		piecesArray[indexPiece].visible = true;
