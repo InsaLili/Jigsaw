@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>World1</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+</head>
+<body>
+<div style="position: relative;">		
+</div>
+<div>
+	<script src="js/phaser.min.js"></script>
+</div>
+<script>
+
+var game = new Phaser.Game(1000, 1000, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render});
+
+function preload() {
+    game.load.image('map', 'assets/france.jpg');
+}
+
+function create() {
+	//Enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.stage.backgroundColor = '#DDDDDD';
+    map = game.add.sprite(0,0,'map');
+    mapPiece = game.add.group();
+	piecesArray=new Array();
+	var horizontalPieces = 5;
+	verticalPieces = 6;
+	pieceNum = verticalPieces*horizontalPieces;
+	var imageWidth = map.width;
+	var imageHeight = map.height;
+	pieceWidth = Math.round(imageWidth/horizontalPieces);
+	pieceHeight = Math.round(imageHeight/verticalPieces);
+	offset = 0;
+
+	map.x = offset;
+	map.y = offset;
+	map.alpha = 0.3;
+	for(i=0;i<horizontalPieces;i++){
+		for(j=0;j<verticalPieces;j++){
+			var bmd=game.make.bitmapData(pieceWidth,pieceHeight);
+			bmd.draw('map', -pieceWidth*i,-pieceHeight*j);
+			bmd.ctx.beginPath();
+			bmd.ctx.lineWidth = "2";
+			bmd.ctx.strokeStyle = 'black';
+			bmd.ctx.moveTo(0,0);
+			bmd.ctx.lineTo(pieceWidth,0);
+			bmd.ctx.lineTo(pieceWidth,pieceHeight);
+			bmd.ctx.lineTo(0,pieceHeight);
+			bmd.ctx.closePath(0,0);
+			bmd.ctx.stroke();
+
+			//mapSprite = mapPiece.create(pieceWidth*i+offset, pieceHeight*j+offset, bmd); 
+			x = Math.random()*(imageWidth-pieceWidth)+offset;
+			y = Math.random()*(imageHeight-pieceHeight)+offset;
+			mapSprite = mapPiece.create(x, y, bmd); 
+			piecesArray.push(mapSprite);
+			mapSprite.inputEnabled =true;
+			mapSprite.input.enableDrag(false, true);
+			// Then we make it snap to left and right side,
+			// also we make it only snap when released.
+			//mapSprite.input.enableSnap(90, 90, false, true);
+			// Limit drop location to only the 2 columns.
+			mapSprite.events.onDragStop.add(fixLocation);
+			//game.input.addPointer();
+		}
+	}
+}
+function fixLocation(mapSprite) {
+	var indexPiece = piecesArray.indexOf(mapSprite);
+	var x = Math.floor(indexPiece/verticalPieces);
+	var y = indexPiece%verticalPieces;
+	var positionX = x*pieceWidth;
+	var positionY = y*pieceHeight;
+
+    // Move the items when it is already dropped.
+    if ((Math.abs(mapSprite.x - (positionX+offset)) < 20) && (Math.abs(mapSprite.y - (positionY+offset)) < 20)){
+        mapSprite.x = positionX+offset;
+        mapSprite.y = positionY+offset;
+        mapSprite.z = -2;
+        mapSprite.inputEnabled =false;
+        //mapSprite.input.enableDrag(false, false);
+        pieceNum--;
+    }
+}
+function update() {
+	if(pieceNum == 0){
+		alert("Congratulations!");
+		pieceNum++;
+	}
+
+}
+
+function render(){
+	game.debug.inputInfo(32,32);
+}
+
+</script>
+</body>
+</html>

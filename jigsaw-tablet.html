@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>World1</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+</head>
+<body>
+<div style="position: relative;">		
+</div>
+<div>
+	<script src="js/phaser.min.js"></script>
+	<script src="js/socket.io.js"></script>        
+	<script src="js/jquery-1.7.2.js"></script>
+	<script src="js/lodash.js"></script>
+</div>
+<script>
+screenW = $(window).width();
+screenH = $(window).height();
+var game = new Phaser.Game(screenW, screenH, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render});
+
+socket = io.connect("134.214.110.60:1337");
+//socket = io.connect("10.43.4.160:1337");
+console.log("connected");
+socket.on("news", function(data) {
+	pos = data.hello;
+});	
+	
+function preload() {
+    game.load.image('map', 'assets/german.jpg');
+}
+
+function create() {
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.stage.backgroundColor = '#DDDDDD';
+
+    map = game.add.sprite(0,0,'map');
+    mapPiece = game.add.group();
+	piecesArray=new Array();
+	var horizontalPieces = 4;
+	verticalPieces = 6;
+	pieceNum = verticalPieces*horizontalPieces;
+	var imageWidth = map.width;
+	var imageHeight = map.height;
+	pieceWidth = Math.round(imageWidth/horizontalPieces);
+	pieceHeight = Math.round(imageHeight/verticalPieces);
+	offsetX = 0;
+	offsetY = 0;
+
+	map.x = offsetX;
+	map.y = offsetY;
+	map.alpha = 0;
+	//draw pieces of map, put these pieces into an array
+	for(i=0;i<horizontalPieces;i++){
+		for(j=0;j<verticalPieces;j++){
+			var bmd=game.make.bitmapData(pieceWidth,pieceHeight);
+			bmd.draw('map', -pieceWidth*i,-pieceHeight*j);
+			bmd.ctx.beginPath();
+			bmd.ctx.lineWidth = "2";
+			bmd.ctx.strokeStyle = 'black';
+			bmd.ctx.moveTo(0,0);
+			bmd.ctx.lineTo(pieceWidth,0);
+			bmd.ctx.lineTo(pieceWidth,pieceHeight);
+			bmd.ctx.lineTo(0,pieceHeight);
+			bmd.ctx.closePath(0,0);
+			bmd.ctx.stroke();
+			//mapSprite = mapPiece.create(pieceWidth*i+offset, pieceHeight*j+offset, bmd); 
+			x = Math.random()*(screenW-pieceWidth)+offsetX;
+			y = Math.random()*(screenH-pieceHeight)+offsetY;
+			mapSprite = mapPiece.create(x, y, bmd); 
+			piecesArray.push(mapSprite);
+			mapSprite.inputEnabled =true;
+			mapSprite.input.enableDrag(false, true);
+			mapSprite.events.onDragStop.add(fixLocation);
+		}
+	}
+}
+function fixLocation(mapSprite) {
+	var indexPiece = piecesArray.indexOf(mapSprite);
+	var x = Math.floor(indexPiece/verticalPieces);
+	var y = indexPiece%verticalPieces;
+	var positionX = x*pieceWidth;
+	var positionY = y*pieceHeight;
+
+    // when pieces are at the right place, fix them, they won't be dragged any more.
+    if (mapSprite.x >= screenW - pieceWidth/2){
+        mapSprite.visible = false;
+        msg = {name: 'pieceGerman', indexPiece: indexPiece};
+		socket.emit('passRight',msg);
+    }else if(mapSprite.y <= - pieceHeight/2){
+    	mapSprite.visible = false;
+        msg = {name: 'pieceFrance', indexPiece: indexPiece};
+		socket.emit('passLeft',msg);
+    }
+}
+function update() {
+
+	//when all pieces are at the right place, finish the game
+	if(pieceNum == 0){
+		alert("Congratulations!");
+		pieceNum++;
+	}
+}
+
+function render(){
+	game.debug.inputInfo(32,32);
+}
+
+</script>
+</body>
+</html>

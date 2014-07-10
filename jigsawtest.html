@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>World1</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+</head>
+<body>
+<div style="position: relative;">		
+</div>
+<div>
+	<script src="js/phaser.min.js"></script>
+</div>
+<script>
+
+var game = new Phaser.Game(1000, 1000, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+    game.load.image('map', 'assets/map.png');
+}
+
+function create() {
+	//Enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.stage.backgroundColor = '#DDDDDD';
+    map = game.add.sprite(0,0,'map');
+    mapPiece = game.add.group();
+	var piecesArray=new Array();
+	var horizontalPieces = 4;
+	var verticalPieces = 6;
+	var imageWidth = map.width;
+	var imageHeight = map.height;
+	var pieceWidth = Math.round(imageWidth/horizontalPieces);
+	var pieceHeight = Math.round(imageHeight/verticalPieces);
+	var offset = Math.round(pieceWidth/4);
+	//var offset = 0;
+
+	map.x = offset;
+	map.y = offset;
+	map.alpha = 0.3;
+	for(i=0;i<horizontalPieces;i++){
+		piecesArray[i]=new Array();
+		for(j=0;j<verticalPieces;j++){
+			piecesArray[i][j] = new Object();
+			piecesArray[i][j].right=Math.floor(Math.random()*2);
+			piecesArray[i][j].down=Math.floor(Math.random()*2);
+			if(j>0){
+				piecesArray[i][j].up=1-piecesArray[i][j-1].down;        
+			}
+			if(i>0){
+				piecesArray[i][j].left=1-piecesArray[i-1][j].right;        
+			}
+			var x8=Math.round(pieceWidth/8);
+			var y8=Math.round(pieceHeight/8);
+			var bmd=game.make.bitmapData(pieceWidth*1.6,pieceHeight*1.6);
+
+			bmd.ctx.beginPath();
+			bmd.ctx.lineWidth = "2";
+			bmd.ctx.strokeStyle = 'black';
+			bmd.ctx.moveTo(offset,offset);
+			if(j!=0){
+				bmd.ctx.lineTo(offset+3*x8,offset);
+				if(piecesArray[i][j].up==1){
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset-2*y8,offset+4*x8,offset-2*y8);
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset-2*y8,offset+5*x8,offset);    
+				}else{
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset+2*y8,offset+4*x8,offset+2*y8);
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset+2*y8,offset+5*x8,offset);
+				}
+
+			}
+			bmd.ctx.lineTo(offset+8*x8,offset);
+			if(i!=horizontalPieces-1){
+				bmd.ctx.lineTo(offset+8*x8,offset+3*y8);
+				if(piecesArray[i][j].right==1){
+					bmd.ctx.quadraticCurveTo(offset+10*x8,offset+2*y8,offset+10*x8,offset+4*y8);
+					bmd.ctx.quadraticCurveTo(offset+10*x8,offset+6*y8,offset+8*x8,offset+5*y8);
+				}else{
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset+2*y8,offset+6*x8,offset+4*y8);
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset+6*y8,offset+8*x8,offset+5*y8);
+				}
+			}
+			bmd.ctx.lineTo(offset+8*x8,offset+8*y8);
+			if(j!=verticalPieces-1){
+				bmd.ctx.lineTo(offset+5*x8,offset+8*y8);
+				if(piecesArray[i][j].down==1){
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset+10*y8,offset+4*x8,offset+10*y8);
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset+10*y8,offset+3*x8,offset+8*y8);
+				}else{
+					bmd.ctx.quadraticCurveTo(offset+6*x8,offset+6*y8,offset+4*x8,offset+6*y8);
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset+6*y8,offset+3*x8,offset+8*y8);
+				}
+			}
+			bmd.ctx.lineTo(offset,offset+8*y8);
+			if(i!=0){
+				bmd.ctx.lineTo(offset,offset+5*y8);
+				if(piecesArray[i][j].left==1){
+					bmd.ctx.quadraticCurveTo(offset-2*x8,offset+6*y8,offset-2*x8,offset+4*y8);
+					bmd.ctx.quadraticCurveTo(offset-2*x8,offset+2*y8,offset,offset+3*y8);/**/
+				}else{
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset+6*y8,offset+2*x8,offset+4*y8);
+					bmd.ctx.quadraticCurveTo(offset+2*x8,offset+2*y8,offset,offset+3*y8);
+				}                          
+			}
+			//bmd.ctx.lineTo(offset,offset);
+			bmd.ctx.closePath();
+			bmd.ctx.stroke();
+			bmd.ctx.clip();
+
+			bmd.draw('map', -pieceWidth*i+offset,-pieceHeight*j+offset);
+			bmd.update();
+			mapSprite = mapPiece.create(pieceWidth*i, pieceHeight*j, bmd); 
+			//x = Math.random()*(game.width-pieceWidth)+pieceWidth/4;
+			//y = Math.random()*(game.height-pieceHeight)+pieceHeight/4;
+			//mapSprite = mapPiece.create(x, y); 
+			mapSprite.inputEnabled =true;
+			mapSprite.input.enableDrag(false, true);
+
+		}
+	}
+}
+
+function update() {
+
+}
+
+
+</script>
+</body>
+</html>

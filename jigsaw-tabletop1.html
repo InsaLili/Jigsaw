@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>World1</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+</head>
+<body>
+<div style="position: relative;">		
+</div>
+<div>
+	<script src="js/phaser.min.js"></script>
+	<script src="js/socket.io.js"></script>        
+	<script src="js/jquery-1.7.2.js"></script>
+	<script src="js/lodash.js"></script>
+</div>
+<script>
+screenW = $(window).width();
+screenH = $(window).height();
+var game = new Phaser.Game(1250, 1100, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render});
+
+socket = io.connect("134.214.110.60:1337");
+console.log("connected");
+socket.on("news", function(data) {
+	pos = data.hello;
+});	
+
+function preload() {
+	game.scale.maxWidth = 900;
+    game.scale.maxHeight = 1000;
+
+    //  Then we tell Phaser that we want it to scale up to whatever the browser can handle, but to do it proportionally
+    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    game.scale.setScreenSize();
+    game.load.image('map', 'assets/german.jpg');
+}
+
+function create() {
+	//Enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.stage.backgroundColor = '#DDDDDD';
+
+    map = game.add.sprite(0,0,'map');
+    mapPiece = game.add.group();
+	piecesArray=new Array();
+	var horizontalPieces = 4;
+	verticalPieces = 6;
+	pieceNum = verticalPieces*horizontalPieces;
+	var imageWidth = map.width;
+	var imageHeight = map.height;
+	pieceWidth = Math.round(imageWidth/horizontalPieces);
+	pieceHeight = Math.round(imageHeight/verticalPieces);
+	offsetX = 250;
+	offsetY = 0;
+	map.x = offsetX;
+	map.y = offsetY;
+	map.alpha = 0.1;
+	for(i=0;i<horizontalPieces;i++){
+		for(j=0;j<verticalPieces;j++){
+			var bmd=game.make.bitmapData(pieceWidth,pieceHeight);
+			bmd.draw('map', -pieceWidth*i,-pieceHeight*j);
+			bmd.ctx.beginPath();
+			bmd.ctx.lineWidth = "2";
+			bmd.ctx.strokeStyle = 'black';
+			bmd.ctx.moveTo(0,0);
+			bmd.ctx.lineTo(pieceWidth,0);
+			bmd.ctx.lineTo(pieceWidth,pieceHeight);
+			bmd.ctx.lineTo(0,pieceHeight);
+			bmd.ctx.closePath(0,0);
+			bmd.ctx.stroke();
+
+			//mapSprite = mapPiece.create(pieceWidth*i+offset, pieceHeight*j+offset, bmd); 
+			x = Math.random()*(imageWidth-pieceWidth)+offsetX;
+			y = Math.random()*(imageHeight-pieceHeight)+offsetY;
+			mapSprite = mapPiece.create(x, y, bmd); 
+			piecesArray.push(mapSprite);
+			mapSprite.inputEnabled =true;
+			mapSprite.input.enableDrag(false, true);
+			mapSprite.visible = false;
+			// Then we make it snap to left and right side,
+			// also we make it only snap when released.
+			//mapSprite.input.enableSnap(90, 90, false, true);
+			// Limit drop location to only the 2 columns.
+			mapSprite.events.onDragStop.add(fixLocation);
+			//game.input.addPointer();
+		}
+	}
+}
+function fixLocation(mapSprite) {
+	var indexPiece = piecesArray.indexOf(mapSprite);
+	var x = Math.floor(indexPiece/verticalPieces);
+	var y = indexPiece%verticalPieces;
+	var positionX = x*pieceWidth;
+	var positionY = y*pieceHeight;
+
+    // Move the items when it is already dropped.
+    if ((Math.abs(mapSprite.x - (positionX+offsetX)) < 20) && (Math.abs(mapSprite.y - (positionY+offsetY)) < 20)){
+        mapSprite.x = positionX+offsetX;
+        mapSprite.y = positionY+offsetY;
+        mapSprite.z = -2;
+        mapSprite.inputEnabled =false;
+        //mapSprite.input.enableDrag(false, false);
+        pieceNum--;
+    }
+}
+function update() {
+	if(pieceNum == 0){
+		alert("Congratulations!");
+		pieceNum++;
+	}
+	socket.on("addSprite", function(data) {
+		//var obj = JSON.parse(data);
+		var indexPiece = data.indexPiece;
+		piecesArray[indexPiece].visible = true;
+		piecesArray[indexPiece].x = 10;
+	})
+}
+
+function render(){
+	game.debug.inputInfo(32,32);
+}
+
+</script>
+</body>
+</html>
